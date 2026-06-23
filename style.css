@@ -1,0 +1,54 @@
+/* КАРТИНКА ТЕЛЕВИЗОРА */
+.tv-overlay {
+    
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
+
+    background-image: url('tv.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    
+    z-index: 30;
+    pointer-events: none;
+}
+
+/* Анимация тряски для неправильного ответа */
+@keyframes shake {
+    0%, 100% { transform: translateX(0) scale(0.9); }
+    20% { transform: translateX(-15px) scale(0.9); }
+    40% { transform: translateX(15px) scale(0.9); }
+    60% { transform: translateX(-10px) scale(0.9); }
+    80% { transform: translateX(10px) scale(0.9); }
+}
+
+/* Эффект для кнопок при подсветке */
+.action-btn {
+    transition: all 0.3s ease;
+}
+
+/* Для правильного ответа */
+.action-btn.correct-highlight {
+    background: #44ff44 !important;
+    box-shadow: 0 0 30px #44ff44, 0 0 60px #44ff88 !important;
+    transform: scale(1.1) !important;
+}
+
+/* Для неправильного ответа пользователя */
+.action-btn.wrong-highlight {
+    background: #ff2222 !important;
+    box-shadow: 0 0 40px #ff2222, 0 0 80px #ff0000 !important;
+    transform: scale(0.9) !important;
+    animation: shake 0.3s ease-in-out !important;
+}
+
+/* Затемнённые кнопки */
+.action-btn.dimmed {
+    opacity: 0.4 !important;
+    transform: scale(0.95) !important;
+    box-shadow: none !important;
+}

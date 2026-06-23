@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sega Retro Fighting - 16-bit</title>
+    <style>
+        /* ОСНОВНЫЕ СТИЛИ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a0a0a 0%, #2d1515 50%, #1a0a0a 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            margin: 0;
+            position: relative;
+        }
+
+        /* Фоновый эффект "ковёр 90-х" */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #4a3a2a, transparent),
+                radial-gradient(2px 2px at 40px 70px, #5a4a3a, transparent),
+                radial-gradient(2px 2px at 50px 160px, #4a3a2a, transparent),
+                radial-gradient(2px 2px at 90px 40px, #5a4a3a, transparent),
+                radial-gradient(2px 2px at 130px 80px, #4a3a2a, transparent);
+            background-size: 200px 200px;
+            opacity: 0.3;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .setup-container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        /* ТЕЛЕВИЗОР */
+        .tv-wrapper {
+            position: relative;
+            width: 750px;
+            height: 650px;
+            margin: 0 auto;
+            overflow: visible;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0a0a0a;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 
+                inset 0 0 60px rgba(0, 0, 0, 0.95),
+                inset 0 0 20px rgba(0, 0, 0, 0.8);
+            border: 4px solid #1a0f08;
+            image-rendering: pixelated;
+            z-index: 1;
+        }
+
+        /* Эффект старых скан-линий */
+        .screen::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(0, 0, 0, 0.12) 0px,
+                    rgba(0, 0, 0, 0.12) 2px,
+                    transparent 2px,
+                    transparent 5px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    rgba(0, 0, 0, 0.05) 0px,
+                    rgba(0, 0, 0, 0.05) 1px,
+                    transparent 1px,
+                    transparent 3px
+                );
+            pointer-events: none;
+            z-index: 10;
+            mix-blend-mode: overlay;
+        }
+
+        /* Эффект "выпуклого" экрана */
+        .screen::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(
+                ellipse at center,
+                transparent 70%,
+                rgba(0, 0, 0, 0.5) 100%
+            );
+            pointer-events: none;
+            z-index: 11;
+        }
+
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            image-rendering: crisp-edges;
+        }
+
+        /* КАРТИНКА ТЕЛЕВИЗОРА (накладывается поверх игры) */
+        .tv-overlay {
+            position: absolute;
+            top: 50%;
+            left: 45%;
+            transform: translate(-50%, calc(-50% - 130px));
+            width: 320%;
+            height: 320%;
+            background-image: url('images/tv.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            z-index: 20;
+            pointer-events: none;
+            overflow: visible;
+        }
+
+        /* ПРИСТАВКА SEGA */
+        .console-section {
+            display: flex;
+            align-items: center;
+            gap: 40px;
+            background: linear-gradient(180deg, #1a1a1a, #0d0d0d);
+            padding: 15px 30px;
+            border-radius: 12px;
+            box-shadow: 
+                0 10px 30px rgba(0, 0, 0, 0.8),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            border: 1px solid #2a2a2a;
+            position: relative;
+            margin-top: -10px;
+            z-index: 30;
+        }
+
+        .sega-console {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sega-logo {
+            font-size: 28px;
+            font-weight: 900;
+            background: linear-gradient(180deg, #00aaff, #0044aa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(0, 100, 255, 0.3);
+            letter-spacing: 6px;
+            font-family: 'Arial Black', sans-serif;
+            position: relative;
+        }
+
+        .sega-logo::after {
+            content: '™';
+            font-size: 10px;
+            -webkit-text-fill-color: #666;
+            position: absolute;
+            top: -5px;
+            right: -20px;
+        }
+
+        .sega-sub {
+            color: #666;
+            font-size: 9px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            border-top: 1px solid #2a2a2a;
+            padding-top: 5px;
+            font-weight: bold;
+        }
+
+        .console-detail {
+            display: flex;
+            gap: 20px;
+            margin-top: 5px;
+        }
+
+        .console-detail .led {
+            width: 6px;
+            height: 6px;
+            background: #00ff44;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #00ff44, 0 0 20px rgba(0, 255, 68, 0.3);
+            animation: ledPulse 1.5s ease-in-out infinite;
+        }
+
+        .console-detail .slot {
+            width: 60px;
+            height: 4px;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 2px;
+            position: relative;
+        }
+
+        .console-detail .slot::after {
+            content: 'CARTRIDGE';
+            position: absolute;
+            top: -14px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #333;
+            font-size: 6px;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+
+        @keyframes ledPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* ГЕЙМПАД */
+        .gamepad {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+            padding: 15px 25px 20px;
+            border-radius: 15px 15px 25px 25px;
+            box-shadow: 
+                0 8px 0 #0a0a0a,
+                0 15px 30px rgba(0, 0, 0, 0.8),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            border: 1px solid #333;
+            position: relative;
+            min-width: 200px;
+        }
+
+        .gamepad .dpad {
+            display: grid;
+            grid-template-columns: 30px 30px 30px;
+            grid-template-rows: 30px 30px 30px;
+            gap: 2px;
+            margin-bottom: 12px;
+        }
+
+        .gamepad .dpad .btn {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            box-shadow: inset 0 -3px 0 #0a0a0a, 0 2px 0 #0a0a0a;
+            transition: all 0.05s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #444;
+            font-size: 10px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .gamepad .dpad .btn:active {
+            transform: translateY(2px);
+            box-shadow: inset 0 -1px 0 #0a0a0a;
+        }
+
+        .gamepad .dpad .btn-center {
+            background: #222;
+            border-radius: 50%;
+        }
+
+        .gamepad .dpad .btn-up { grid-column: 2; grid-row: 1; }
+        .gamepad .dpad .btn-down { grid-column: 2; grid-row: 3; }
+        .gamepad .dpad .btn-left { grid-column: 1; grid-row: 2; }
+        .gamepad .dpad .btn-right { grid-column: 3; grid-row: 2; }
+
+        .gamepad .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 5px;
+        }
+
+        .gamepad .action-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            font-weight: bold;
+            font-size: 14px;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            box-shadow: 
+                0 4px 0 rgba(0, 0, 0, 0.3),
+                inset 0 2px 0 rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gamepad .action-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .gamepad .action-btn.y { background: #ffcc00; color: #222; }
+        .gamepad .action-btn.x { background: #4444ff; }
+        .gamepad .action-btn.b { background: #ff4444; }
+        .gamepad .action-btn.a { background: #44bb44; }
+
+        .gamepad .start-select {
+            display: flex;
+            gap: 20px;
+            margin-top: 8px;
+        }
+
+        .gamepad .start-select span {
+            color: #555;
+            font-size: 7px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            background: #1a1a1a;
+            padding: 2px 8px;
+            border-radius: 3px;
+            border: 1px solid #2a2a2a;
+        }
+
+        .gamepad-label {
+            color: #444;
+            font-size: 7px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0) scale(0.9); }
+            20% { transform: translateX(-15px) scale(0.9); }
+            40% { transform: translateX(15px) scale(0.9); }
+            60% { transform: translateX(-10px) scale(0.9); }
+            80% { transform: translateX(10px) scale(0.9); }
+        }
+
+        @media (max-width: 800px) {
+            .tv-wrapper {
+                width: 90vw;
+                height: auto;
+                aspect-ratio: 750 / 650;
+            }
+            .console-section {
+                flex-direction: column;
+                padding: 15px;
+                gap: 20px;
+                width: 100%;
+                max-width: 400px;
+            }
+            .gamepad {
+                min-width: unset;
+                width: 100%;
+                padding: 12px;
+            }
+            .sega-logo {
+                font-size: 20px;
+            }
+        }
+
+        @media (max-width: 500px) {
+            .gamepad .action-btn {
+                width: 28px;
+                height: 28px;
+                font-size: 10px;
+            }
+            .gamepad .dpad .btn {
+                width: 24px;
+                height: 24px;
+                font-size: 8px;
+            }
+            .gamepad .dpad {
+                grid-template-columns: 24px 24px 24px;
+                grid-template-rows: 24px 24px 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="setup-container">
+    <div class="tv-wrapper">
+        <div class="screen">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+        <div class="tv-overlay"></div>
+    </div>
+
+    <div class="console-section">
+        <div class="sega-console">
+            <div class="sega-logo">SEGA</div>
+            <div class="sega-sub">Mega Drive</div>
+            <div class="console-detail">
+                <div class="led"></div>
+                <div class="slot"></div>
+                <div style="width:10px;"></div>
+                <div style="color:#333;font-size:8px;">16-BIT</div>
+            </div>
+        </div>
+
+        <div class="gamepad">
+            <div class="dpad">
+                <div class="btn btn-up">▲</div>
+                <div class="btn btn-down">▼</div>
+                <div class="btn btn-left">◄</div>
+                <div class="btn btn-right">►</div>
+                <div class="btn btn-center"></div>
+            </div>
+            <div class="action-buttons">
+                <button class="action-btn y" data-key="Y">Y</button>
+                <button class="action-btn x" data-key="X">X</button>
+                <button class="action-btn b" data-key="B">B</button>
+                <button class="action-btn a" data-key="A">A</button>
+            </div>
+            <div class="start-select">
+                <span>SELECT</span>
+                <span>START</span>
+            </div>
+            <div class="gamepad-label">CONTROL PAD</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    //  ОСНОВНАЯ ИГРОВАЯ ЛОГИКА
+    (function() {
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Функция для автоматической подгонки размера холста под размер экрана
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width || 680;
+            canvas.height = rect.height || 680;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        //  ЗАГРУЗКА КАРТИНОК ПЕРСОНАЖЕЙ
+        const chunLiImages = {
+            img1: new Image(),
+            img2: new Image()
+        };
+        const ryuImages = {
+            img1: new Image(),
+            img2: new Image()
+        };
+
+        // Указываем пути к файлам с картинками
+        chunLiImages.img1.src = 'images/ChunLi1.png';
+        chunLiImages.img2.src = 'images/ChunLi2.png';
+        ryuImages.img1.src = 'images/Ryu1.png';
+        ryuImages.img2.src = 'images/Ryu2.png';
+
+        // Счётчик загруженных картинок
+        let imagesLoaded = 0;
+        const totalImages = 4;
+
+        function checkImagesLoaded() {
+            imagesLoaded++;
+            if (imagesLoaded === totalImages) {
+                console.log(' Все картинки персонажей загружены!');
+                startGame(); // Запускаем игру
+            }
+        }
+
+        // Назначаем обработчики загрузки для каждой картинки
+        chunLiImages.img1.onload = checkImagesLoaded;
+        chunLiImages.img2.onload = checkImagesLoaded;
+        ryuImages.img1.onload = checkImagesLoaded;
+        ryuImages.img2.onload = checkImagesLoaded;
+
+        // Если картинки уже загружены из кеша - увеличиваем счётчик
+        if (chunLiImages.img1.complete) imagesLoaded++;
+        if (chunLiImages.img2.complete) imagesLoaded++;
+        if (ryuImages.img1.complete) imagesLoaded++;
+        if (ryuImages.img2.complete) imagesLoaded++;
+
+        //  СОСТОЯНИЕ ИГРЫ
+        const state = {
+            playerHP: 100,
+            enemyHP: 100,
+
+            
+            playerX: 0.10,
+            playerY: 0.90,
+            enemyX: 0.67,
+            enemyY: 0.90,
+
+            
+            playerWidth: 0.27,
+            playerHeight: 0.47,
+            enemyWidth: 0.30,
+            enemyHeight: 0.64,
+
+            // Состояния удара
+            playerPunch: false,
+            enemyPunch: false,
+
+            // Система комбо
+            comboCount: 0,
+            maxCombo: 3,
+
+            // Состояние игры
+            gameOver: false,
+            winner: null,
+
+            punchTimer: 0,
+            enemyPunchTimer: 0,
+
+            currentWord: null,
+            options: [],
+            correctIndex: 0,
+
+            // Блокировка ввода
+            processing: false,
+
+            roundDelay: 0,
+
+            showSega: true,
+            segaTimer: 120,
+
+            // Размеры холста
+            canvasWidth: 680,
+            canvasHeight: 680,
+
+            // Анимация персонажей
+            playerAnimFrame: 0,
+            enemyAnimFrame: 0,
+            animTimer: 0,
+
+            gameStarted: false,
+        };
+
+        //  СЛОВАРЬ
+        const vocabulary = [
+            { ru: 'Привет', en: 'Hello' },
+            { ru: 'Солнце', en: 'Sun' },
+            { ru: 'Книга', en: 'Book' },
+            { ru: 'Дом', en: 'House' },
+            { ru: 'Кот', en: 'Cat' },
+            { ru: 'Собака', en: 'Dog' },
+            { ru: 'Машина', en: 'Car' },
+            { ru: 'Дерево', en: 'Tree' },
+            { ru: 'Вода', en: 'Water' },
+            { ru: 'Огонь', en: 'Fire' },
+            { ru: 'Земля', en: 'Earth' },
+            { ru: 'Небо', en: 'Sky' },
+            { ru: 'Море', en: 'Sea' },
+            { ru: 'Ветер', en: 'Wind' },
+            { ru: 'Ночь', en: 'Night' },
+            { ru: 'День', en: 'Day' },
+            { ru: 'Любовь', en: 'Love' },
+            { ru: 'Дружба', en: 'Friendship' },
+            { ru: 'Счастье', en: 'Happiness' },
+            { ru: 'Мир', en: 'Peace' }
+        ];
+
+        //  ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+
+        // Перемешивание массива 
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function getRandomWord() {
+            return vocabulary[Math.floor(Math.random() * vocabulary.length)];
+        }
+
+        //  ГЕНЕРАЦИЯ ВОПРОСА
+        function generateQuestion() {
+            
+            const correct = getRandomWord();
+
+            let wrongs = [];
+            const pool = vocabulary.filter(w => w.ru !== correct.ru || w.en !== correct.en);
+            const shuffledPool = shuffleArray([...pool]);
+
+            for (let i = 0; i < Math.min(3, shuffledPool.length); i++) {
+                wrongs.push(shuffledPool[i]);
+            }
+
+            while (wrongs.length < 3) {
+                const w = getRandomWord();
+                if (!wrongs.some(x => x.ru === w.ru && x.en === w.en) &&
+                    (w.ru !== correct.ru || w.en !== correct.en)) {
+                    wrongs.push(w);
+                }
+            }
+
+            // Собираем все варианты и перемешиваем
+            let options = [correct, ...wrongs];
+            options = shuffleArray(options);
+
+            const correctIndex = options.findIndex(w => w.ru === correct.ru && w.en === correct.en);
+
+            return { word: correct, options, correctIndex };
+        }
+
+        //  НОВЫЙ РАУНД (новый вопрос)
+        function newRound() {
+            if (state.gameOver) return;
+
+            const q = generateQuestion();
+
+            state.currentWord = q.word;
+            state.options = q.options;
+            state.correctIndex = q.correctIndex;
+
+            state.processing = false;
+            state.roundDelay = 0;
+            state.playerPunch = false;
+            state.enemyPunch = false;
+            state.punchTimer = 0;
+            state.enemyPunchTimer = 0;
+
+            resetButtonColors();
+        }
+
+        //  СБРОС ЦВЕТА КНОПОК ГЕЙМПАДА
+        function resetButtonColors() {
+            const buttons = document.querySelectorAll('.action-btn');
+            buttons.forEach(btn => {
+                btn.style.background = '';
+                btn.style.boxShadow = '';
+                btn.style.transform = '';
+                btn.style.opacity = '';
+                btn.style.animation = '';
+                btn.style.transition = 'all 0.3s ease';
+            });
+        }
+
+        //  ОБРАБОТКА ОТВЕТА ИГРОКА
+        function handleAnswer(selectedIndex) {
+            // Проверяем, можно ли отвечать
+            if (state.processing || state.gameOver || state.showSega) return;
+            if (!state.currentWord) return;
+
+            state.processing = true;
+
+            const isCorrect = (selectedIndex === state.correctIndex);
+
+            // ПОДСВЕТКА КНОПОК НА ГЕЙМПАДЕ
+            const buttons = document.querySelectorAll('.action-btn');
+            buttons.forEach((btn, idx) => {
+                btn.style.transition = 'all 0.3s ease';
+
+                if (idx === state.correctIndex) {
+                    // Правильный ответ - зелёный
+                    btn.style.background = '#44ff44';
+                    btn.style.boxShadow = '0 0 30px #44ff44, 0 0 60px #44ff88';
+                    btn.style.transform = 'scale(1.1)';
+                    btn.style.opacity = '1';
+                } else if (idx === selectedIndex && !isCorrect) {
+                    // Неправильный ответ - красный
+                    btn.style.background = '#ff2222';
+                    btn.style.boxShadow = '0 0 40px #ff2222, 0 0 80px #ff0000';
+                    btn.style.transform = 'scale(0.9)';
+                    btn.style.animation = 'shake 0.3s ease-in-out';
+                    btn.style.opacity = '1';
+                } else {
+                    // Остальные кнопки - затемнённые
+                    btn.style.background = '#333333';
+                    btn.style.boxShadow = 'none';
+                    btn.style.transform = 'scale(0.95)';
+                    btn.style.opacity = '0.4';
+                    btn.style.animation = '';
+                }
+            });
+
+            // ОБРАБОТКА ПРАВИЛЬНОГО ОТВЕТА
+            if (isCorrect) {
+                state.playerPunch = true;
+                state.punchTimer = 20;
+
+                const isCombo = (state.comboCount >= state.maxCombo - 1);
+                const damage = 10 + (isCombo ? 15 : 0);
+
+                state.enemyHP = Math.max(0, state.enemyHP - damage);
+
+                state.comboCount++;
+
+                if (state.comboCount >= state.maxCombo) {
+                    state.comboCount = 0;
+                }
+
+                // Проверяем, не умер ли враг
+                if (state.enemyHP <= 0) {
+                    state.enemyHP = 0;
+                    state.gameOver = true;
+                    state.winner = 'player';
+                    state.processing = false;
+                    return;
+                }
+
+                state.roundDelay = 30;
+                setTimeout(() => {
+                    if (!state.gameOver) newRound();
+                    state.processing = false;
+                    resetButtonColors();
+                }, 500);
+            }
+
+            // ОБРАБОТКА НЕПРАВИЛЬНОГО ОТВЕТА
+            else {
+                state.enemyPunch = true;
+                state.enemyPunchTimer = 20;
+
+                const damage = 10 + (state.comboCount >= state.maxCombo ? 5 : 0);
+
+                state.playerHP = Math.max(0, state.playerHP - damage);
+
+                state.comboCount = 0;
+
+                // Проверяем, не умер ли игрок
+                if (state.playerHP <= 0) {
+                    state.playerHP = 0;
+                    state.gameOver = true;
+                    state.winner = 'enemy';
+                    state.processing = false;
+                    return;
+                }
+
+                // Задержка перед следующим вопросом
+                state.roundDelay = 30;
+                setTimeout(() => {
+                    if (!state.gameOver) newRound();
+                    state.processing = false;
+                    resetButtonColors();
+                }, 500);
+            }
+        }
+
+        //  УПРАВЛЕНИЕ С КЛАВИАТУРЫ
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toUpperCase();
+            let index = -1;
+
+            // Маппинг клавиш на индексы вариантов
+            if (key === 'Y') index = 0;
+            else if (key === 'X') index = 1;
+            else if (key === 'B') index = 2;
+            else if (key === 'A') index = 3;
+
+            // Если нажата правильная клавиша - обрабатываем ответ
+            if (index !== -1 && !e.repeat) {
+                e.preventDefault();
+                handleAnswer(index);
+            }
+
+            // R - рестарт игры
+            if (key === 'R' && state.gameOver) resetGame();
+        });
+
+        //  УПРАВЛЕНИЕ С КНОПОК ГЕЙМПАДА
+        document.querySelectorAll('.action-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const key = btn.dataset.key;
+                let index = -1;
+                if (key === 'Y') index = 0;
+                else if (key === 'X') index = 1;
+                else if (key === 'B') index = 2;
+                else if (key === 'A') index = 3;
+                if (index !== -1) handleAnswer(index);
+            });
+
+            // Визуальный эффект нажатия
+            btn.addEventListener('mousedown', () => {
+                btn.style.transform = 'scale(0.85)';
+            });
+            btn.addEventListener('mouseup', () => {
+                btn.style.transform = 'scale(1)';
+            });
+            btn.addEventListener('mouseleave', () => {
+                btn.style.transform = 'scale(1)';
+            });
+        });
+
+        //  ОТРИСОВКА
+
+        // ОТРИСОВКА ЛОГОТИПА SEGA 
+        function drawSegaLogo() {
+            const W = state.canvasWidth;
+            const H = state.canvasHeight;
+
+            // Очищаем экран
+            ctx.clearRect(0, 0, W, H);
+
+            // Градиентный фон
+            const grad = ctx.createRadialGradient(W / 2, H / 2, 50, W / 2, H / 2, 400);
+            grad.addColorStop(0, '#0a1a3a');
+            grad.addColorStop(1, '#000000');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+
+            // Рисуем логотип SEGA
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = '#0066ff';
+            ctx.shadowBlur = 40;
+
+            ctx.font = `bold ${W * 0.12}px "Arial Black", sans-serif`;
+            const grad2 = ctx.createLinearGradient(W * 0.15, H * 0.4, W * 0.85, H * 0.6);
+            grad2.addColorStop(0, '#00aaff');
+            grad2.addColorStop(0.5, '#ffffff');
+            grad2.addColorStop(1, '#0044aa');
+            ctx.fillStyle = grad2;
+            ctx.fillText('SEGA', W / 2, H * 0.44);
+            ctx.shadowBlur = 0;
+
+            // Дополнительная информация
+            ctx.font = `${W * 0.03}px "Courier New", monospace`;
+            ctx.fillStyle = '#4488aa';
+            ctx.fillText('16-BIT', W / 2, H * 0.54);
+
+            ctx.font = `${W * 0.02}px "Courier New", monospace`;
+            ctx.fillStyle = '#446688';
+            ctx.fillText('WORD FIGHTER', W / 2, H * 0.60);
+
+            ctx.font = `${W * 0.018}px "Courier New", monospace`;
+            ctx.fillStyle = '#335577';
+            ctx.fillText('PRESS ANY KEY', W / 2, H * 0.69);
+        }
+
+        // ОТРИСОВКА ИГРЫ
+        function drawGame() {
+            const W = state.canvasWidth;
+            const H = state.canvasHeight;
+
+            // Очищаем экран
+            ctx.clearRect(0, 0, W, H);
+
+            // ФОН АРЕНЫ
+            const gradient = ctx.createLinearGradient(0, 0, 0, H);
+            gradient.addColorStop(0, '#0a0a1a');
+            gradient.addColorStop(0.6, '#1a1a2e');
+            gradient.addColorStop(1, '#0a0a1a');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, W, H);
+
+            // ПОЛ
+            const floorY = H * 0.72;
+            ctx.fillStyle = '#1a2a1a';
+            ctx.fillRect(0, floorY, W, H - floorY);
+            ctx.strokeStyle = '#2a4a2a';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, floorY);
+            ctx.lineTo(W, floorY);
+            ctx.stroke();
+
+            // Сетка на полу
+            ctx.strokeStyle = 'rgba(60, 120, 60, 0.15)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < W; i += 40) {
+                ctx.beginPath();
+                ctx.moveTo(i, floorY);
+                ctx.lineTo(i, H);
+                ctx.stroke();
+            }
+
+            // ОТРИСОВКА ПЕРСОНАЖЕЙ
+
+            // Вычисляем размеры и позиции персонажей
+            const pW = W * state.playerWidth;
+            const pH = H * state.playerHeight;
+            const pX = W * state.playerX;
+            const pY = H * state.playerY - pH;
+            const eX = W * state.enemyX;
+            const eY = H * state.enemyY - pH;
+
+            // Выбираем, какую картинку показывать
+            let playerImg = state.playerAnimFrame === 0 ? chunLiImages.img1 : chunLiImages.img2;
+            let enemyImg = state.enemyAnimFrame === 0 ? ryuImages.img1 : ryuImages.img2;
+
+            // ИГРОК (Чун-Ли)
+            if (playerImg.complete && playerImg.src) {
+                const imgAspect = playerImg.width / playerImg.height;
+                let drawW = pW;
+                let drawH = pW / imgAspect;
+                if (drawH > pH) {
+                    drawH = pH;
+                    drawW = pH * imgAspect;
+                }
+                const offsetX = (pW - drawW) / 2;
+                const offsetY = (pH - drawH) / 2;
+                ctx.drawImage(playerImg, pX + offsetX, pY + offsetY, drawW, drawH);
+            } else {
+                // Если картинка не загружена - рисуем заглушку
+                ctx.fillStyle = '#3a7abd';
+                ctx.fillRect(pX, pY, pW, pH);
+                ctx.fillStyle = '#fff';
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Чун-Ли', pX + pW / 2, pY + pH / 2);
+            }
+
+            // ВРАГ (Рю)
+            if (enemyImg.complete && enemyImg.src) {
+                const imgAspect = enemyImg.width / enemyImg.height;
+                let drawW = pW;
+                let drawH = pW / imgAspect;
+                if (drawH > pH) {
+                    drawH = pH;
+                    drawW = pH * imgAspect;
+                }
+                const offsetX = (pW - drawW) / 2;
+                const offsetY = (pH - drawH) / 2;
+                ctx.drawImage(enemyImg, eX + offsetX, eY + offsetY, drawW, drawH);
+            } else {
+                ctx.fillStyle = '#bd3a3a';
+                ctx.fillRect(eX, eY, pW, pH);
+                ctx.fillStyle = '#fff';
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Рю', eX + pW / 2, eY + pH / 2);
+            }
+
+            // ЭФФЕКТЫ УДАРОВ
+
+            // Удар игрока
+            if (state.playerPunch) {
+                ctx.fillStyle = 'rgba(61, 152, 255, 0.25)';
+                ctx.beginPath();
+                ctx.arc(pX + pW + pW * 0.3, pY + pH * 0.4, pW * 0.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#99f6ff';
+                ctx.fillStyle = 'rgba(20, 239, 255, 0.86)';
+                ctx.beginPath();
+                ctx.arc(pX + pW + pW * 0.2, pY + pH * 0.4, pW * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            // Удар врага
+            if (state.enemyPunch) {
+                ctx.fillStyle = 'rgba(234, 255, 99, 0.25)';
+                ctx.beginPath();
+                ctx.arc(eX - pW * 0.3, eY + pH * 0.4, pW * 0.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#ff4444';
+                ctx.fillStyle = 'rgba(251, 255, 10, 0.75)';
+                ctx.beginPath();
+                ctx.arc(eX - pW * 0.2, eY + pH * 0.4, pW * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            // HP
+            const hpBarW = W * 0.31;
+            const hpBarH = H * 0.032;
+            const hpY = H * 0.08;
+
+            // HP игрока
+            ctx.fillStyle = '#111';
+            ctx.fillRect(W * 0.04, hpY, hpBarW, hpBarH);
+            ctx.fillStyle = '#3a7abd';
+            ctx.fillRect(W * 0.043, hpY + H * 0.003, (hpBarW - W * 0.006) * (state.playerHP / 100), hpBarH - H * 0.006);
+            ctx.strokeStyle = '#444';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(W * 0.04, hpY, hpBarW, hpBarH);
+            ctx.fillStyle = '#fff';
+            ctx.font = `bold ${H * 0.016}px "Courier New", monospace`;
+            ctx.fillText(`Чун-Ли ${Math.ceil(state.playerHP)}%`, W * 0.150, hpY + H * 0.023);
+
+            // HP врага
+            ctx.fillStyle = '#111';
+            ctx.fillRect(W * 0.653, hpY, hpBarW, hpBarH);
+            ctx.fillStyle = '#bd3a3a';
+            ctx.fillRect(W * 0.656, hpY + H * 0.003, (hpBarW - W * 0.006) * (state.enemyHP / 100), hpBarH - H * 0.006);
+            ctx.strokeStyle = '#444';
+            ctx.strokeRect(W * 0.653, hpY, hpBarW, hpBarH);
+            ctx.fillStyle = '#fff';
+            ctx.fillText(`Рю ${Math.ceil(state.enemyHP)}%`, W * 0.720, hpY + H * 0.023);
+
+            // КОМБО
+            if (state.comboCount > 0) {
+                ctx.fillStyle = '#ffcc00';
+                ctx.font = `bold ${H * 0.032}px "Courier New", monospace`;
+                ctx.textAlign = 'center';
+                ctx.shadowColor = '#ffcc00';
+                ctx.shadowBlur = 20;
+                ctx.fillText(`COMBO x${state.comboCount}`, W / 2, H * 0.11);
+                ctx.shadowBlur = 0;
+            }
+
+            // ВОПРОС И ВАРИАНТЫ ОТВЕТОВ
+            if (state.currentWord && !state.gameOver) {
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#fff';
+                ctx.font = `bold ${H * 0.041}px "Courier New", monospace`;
+                ctx.shadowColor = 'rgba(255,255,255,0.1)';
+                ctx.shadowBlur = 10;
+                ctx.fillText(`"${state.currentWord.ru}"`, W / 2, H * 0.22);
+                ctx.shadowBlur = 0;
+
+                // Подпись
+                ctx.font = `${H * 0.024}px "Courier New", monospace`;
+                ctx.fillStyle = '#88aacc';
+                ctx.fillText('→ перевод на английский:', W / 2, H * 0.26);
+
+                // Варианты ответов
+                const labels = ['Y', 'X', 'B', 'A'];
+                const positions = [
+                    { x: W * 0.30, y: H * 0.36 }, // Y - верхний левый
+                    { x: W * 0.70, y: H * 0.36 }, // X - верхний правый
+                    { x: W * 0.30, y: H * 0.46 }, // B - нижний левый
+                    { x: W * 0.70, y: H * 0.46 }  // A - нижний правый
+                ];
+
+                // Цвета текста для каждой кнопки
+                const textColors = [
+                    '#ffdd44', // Y
+                    '#bb77ff', // X
+                    '#ff6666', // B
+                    '#66dd66'  // A
+                ];
+
+                // Рисуем каждую кнопку с вариантом ответа
+                state.options.forEach((opt, idx) => {
+                    const pos = positions[idx];
+                    const isCorrect = (idx === state.correctIndex && state.processing);
+                    const btnW = W * 0.22;
+                    const btnH = H * 0.06;
+
+                    // Фон кнопки
+                    ctx.fillStyle = isCorrect ? 'rgba(0,255,68,0.2)' : 'rgba(0,0,0,0.6)';
+                    ctx.shadowBlur = isCorrect ? 20 : 0;
+                    ctx.shadowColor = '#00ff44';
+                    ctx.beginPath();
+                    ctx.roundRect(pos.x - btnW / 2, pos.y - btnH / 2, btnW, btnH, 10);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+
+                    // Рамка кнопки
+                    ctx.strokeStyle = isCorrect ? '#00ff44' : '#4a4a5a';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.roundRect(pos.x - btnW / 2, pos.y - btnH / 2, btnW, btnH, 10);
+                    ctx.stroke();
+
+                    // Текст кнопки
+                    ctx.fillStyle = isCorrect ? '#4f4' : textColors[idx];
+                    ctx.font = `bold ${H * 0.022}px "Courier New", monospace`;
+                    ctx.fillText(`${labels[idx]}: ${opt.en}`, pos.x, pos.y + H * 0.007);
+                });
+            }
+
+            // ЭКРАН GAME OVER
+            if (state.gameOver) {
+                ctx.fillStyle = 'rgba(0,0,0,0.75)';
+                ctx.fillRect(0, H * 0.29, W, H * 0.26);
+
+                ctx.textAlign = 'center';
+                ctx.shadowBlur = 30;
+
+                if (state.winner === 'player') {
+                    ctx.fillStyle = '#ffcc00';
+                    ctx.shadowColor = '#ffcc00';
+                    ctx.font = `bold ${H * 0.088}px "Arial Black", sans-serif`;
+                    ctx.fillText('YOU WIN!', W / 2, H * 0.41);
+                } else {
+                    ctx.fillStyle = '#ff3333';
+                    ctx.shadowColor = '#ff3333';
+                    ctx.font = `bold ${H * 0.088}px "Arial Black", sans-serif`;
+                    ctx.fillText('GAME OVER', W / 2, H * 0.41);
+                }
+
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#88aacc';
+                ctx.font = `${H * 0.026}px "Courier New", monospace`;
+                ctx.fillText('PRESS [R] TO RESTART', W / 2, H * 0.50);
+            }
+
+            // ВОДЯНОЙ ЗНАК SEGA
+            ctx.fillStyle = 'rgba(0,100,200,0.05)';
+            ctx.font = `bold ${H * 0.018}px "Arial Black", sans-serif`;
+            ctx.textAlign = 'right';
+            ctx.fillText('SEGA', W - W * 0.03, H - H * 0.015);
+        }
+
+        //  ОБНОВЛЕНИЕ ИГРЫ
+        //  Вызывается каждый кадр, обновляет таймеры и анимацию
+        function update() {
+            if (state.showSega) {
+                state.segaTimer--;
+                if (state.segaTimer <= 0) {
+                    state.showSega = false;
+                    newRound();
+                }
+                return;
+            }
+
+            // Анимация персонажей
+            state.animTimer++;
+            if (state.animTimer >= 60) {
+                state.animTimer = 0;
+                state.playerAnimFrame = state.playerAnimFrame === 0 ? 1 : 0;
+                state.enemyAnimFrame = state.enemyAnimFrame === 0 ? 1 : 0;
+            }
+
+            // Таймеры ударов
+            if (state.punchTimer > 0) {
+                state.punchTimer--;
+                if (state.punchTimer === 0) state.playerPunch = false; // Эффект исчезает
+            }
+            if (state.enemyPunchTimer > 0) {
+                state.enemyPunchTimer--;
+                if (state.enemyPunchTimer === 0) state.enemyPunch = false; // Эффект исчезает
+            }
+
+            // Таймер задержки между раундами
+            if (state.roundDelay > 0) state.roundDelay--;
+        }
+
+        //  РЕСТАРТ ИГРЫ
+        //  Сбрасывает все состояние к начальному
+        function resetGame() {
+            state.playerHP = 100;
+            state.enemyHP = 100;
+            state.comboCount = 0;
+            state.gameOver = false;
+            state.winner = null;
+            state.processing = false;
+            state.playerPunch = false;
+            state.enemyPunch = false;
+            state.punchTimer = 0;
+            state.enemyPunchTimer = 0;
+            state.currentWord = null;
+            state.roundDelay = 0;
+            state.showSega = true;
+            state.segaTimer = 90;
+            state.animTimer = 0;
+            state.playerAnimFrame = 0;
+            state.enemyAnimFrame = 0;
+            resetButtonColors(); // Сбрасываем подсветку кнопок
+        }
+
+        //  ЗАПУСК ИГРЫ И ИГРОВОЙ ЦИКЛ
+
+        // Функция запуска игры
+        function startGame() {
+            state.gameStarted = true;
+            gameLoop(); // Запускаем игровой цикл
+        }
+
+        // Игровой цикл (вызывается ~60 раз в секунду)
+        function gameLoop() {
+            if (!state.gameStarted) return;
+
+            // Получаем актуальные размеры холста
+            const rect = canvas.parentElement.getBoundingClientRect();
+            state.canvasWidth = rect.width || 680;
+            state.canvasHeight = rect.height || 680;
+
+            update();
+
+            // Рисуем либо логотип, либо игру
+            if (state.showSega) {
+                drawSegaLogo();
+            } else {
+                drawGame();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        //  рисование скруглённых прямоугольников
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+                this.moveTo(x + r, y);
+                this.lineTo(x + w - r, y);
+                this.quadraticCurveTo(x + w, y, x + w, y + r);
+                this.lineTo(x + w, y + h - r);
+                this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+                this.lineTo(x + r, y + h);
+                this.quadraticCurveTo(x, y + h, x, y + h - r);
+                this.lineTo(x, y + r);
+                this.quadraticCurveTo(x, y, x + r, y);
+                this.closePath();
+                return this;
+            };
+        }
+
+        // запускаем игру
+        if (imagesLoaded === totalImages) {
+            console.log('✅ Все картинки персонажей загружены!');
+            startGame();
+        } else {
+            console.log('⏳ Загрузка картинок персонажей...');
+        }
+
+        // Вывод информации в консоль
+        console.log('🎮 SEGA 16-BIT WORD FIGHTER');
+        console.log('Клавиши: Y, X, B, A для выбора ответа');
+        console.log('R - рестарт');
+        console.log('👊 Чун-Ли (игрок) vs Рю (враг)');
+        console.log('📐 Варианты ответов: 2 сверху, 2 снизу!');
+        console.log('💡 Комбо: 3 правильных ответа подряд = урон 25!');
+    })();
+</script>
+
+</body>
+</html>
